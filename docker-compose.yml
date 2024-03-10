@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  springboot-docker-compose-app-container:
+    image: appserver
+    environment:
+      - "SPRING_PROFILES_ACTIVE=docker"
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - /data/springboot-docker-compose-app
+    ports:
+      - "8082:8082"
+    networks:
+      - dbnetwork
+
+networks:
+  dbnetwork:
+    name: dbnetwork
