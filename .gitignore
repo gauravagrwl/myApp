@@ -7,7 +7,7 @@ public/
 **/.DS_Store
 .hugo_build.lock
 **/.vscode
-resources/
+# resources/
 
 ##############################
 ## Java

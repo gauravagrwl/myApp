@@ -1,0 +1,12 @@
+{"properties": [
+  {
+    "name": "updateBalance",
+    "type": "java.lang.String",
+    "description": "corn schedule to run job"
+  },
+  {
+    "name": "updateCashFlowStatement",
+    "type": "java.lang.String",
+    "description": "A description for 'updateCashFlowStatement'"
+  }
+]}

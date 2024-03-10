@@ -1,0 +1,15 @@
+server:
+  port: 8082
+#  servlet:
+#    context-path: /api/portfoio
+
+
+    
+updateBalance: "10 * * * * *"
+updateCashFlowStatement: "10 * * * * *"
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://mongodb:27017
+      database: testDB
