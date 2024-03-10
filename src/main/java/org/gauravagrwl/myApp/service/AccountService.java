@@ -37,8 +37,6 @@ public class AccountService {
 
     private MongoTemplate template;
 
-    private AccountTransactionDocumentRepository accountTransactionDocumentRepository;
-
     private ProfileService profileService;
 
     private Query getDuplicateTransactionQuery(AccountTransactionDocument t) {
@@ -61,7 +59,6 @@ public class AccountService {
             AccountTransactionDocumentRepository accountTransactionDocumentRepository, MongoTemplate template) {
         this.accountDocumentRepository = accountDocumentRepository;
         this.profileService = profileService;
-        this.accountTransactionDocumentRepository = accountTransactionDocumentRepository;
         this.template = template;
     }
 
@@ -116,7 +113,9 @@ public class AccountService {
                     Update update = Update.update("duplicate", Boolean.TRUE);
                     UpdateResult updateMultiResult = template.updateMulti(query, update,
                             AccountTransactionDocument.class, transactionCollectionName);
-                    if (updateMultiResult.getModifiedCount() > 0) {
+                    if (updateMultiResult.getMatchedCount() > 0) {
+                        LOGGER.warn("Total Duplicate Records found: " + updateMultiResult.getMatchedCount()
+                                + "and total updated records are: " + updateMultiResult.getModifiedCount());
                         t.setDuplicate(Boolean.TRUE);
                     }
                     template.save(t, transactionCollectionName);
