@@ -2,6 +2,7 @@ package org.gauravagrwl.myApp.model;
 
 import java.util.List;
 
+import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
 import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.data.annotation.Version;

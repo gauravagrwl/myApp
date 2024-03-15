@@ -10,8 +10,12 @@ public class AppHelper {
         return StringUtils.join("XXXX", StringUtils.right(accountNumber, 4));
     }
 
-    public static String getCollectionName(String... elements) {
-        return StringUtils.join(elements, UNDER_SCORE);
+    public static String getStatementCollectionName(String... elements) {
+        return StringUtils.join(elements, UNDER_SCORE).concat("_statementCollection");
+    }
+
+    public static String getLedgerCollectionName(String... elements) {
+        return StringUtils.join(elements, UNDER_SCORE).concat("_ledgerDocument");
     }
 
 }

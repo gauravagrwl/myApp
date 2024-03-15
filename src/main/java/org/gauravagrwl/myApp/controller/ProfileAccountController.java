@@ -1,19 +1,15 @@
 package org.gauravagrwl.myApp.controller;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.AccountDocument;
-import org.gauravagrwl.myApp.model.AccountTransactionDocument;
+import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
 import org.gauravagrwl.myApp.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,12 +22,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.bean.HeaderColumnNameMappingStrategyBuilder;
-import com.opencsv.bean.MappingStrategy;
 
 @RestController
 @RequestMapping(value = "/profileAccount")
@@ -86,7 +76,7 @@ public class ProfileAccountController {
      * @param accountType
      * @return
      */
-    @GetMapping(value = "/getUserAccounts", produces = "application/json")
+    @GetMapping(value = "/getAccounts", produces = "application/json")
     public ResponseEntity<List<AccountDocument>> getProfileAccounts(
             @RequestParam(name = "userName", required = true) String userName,
             @RequestParam(name = "institutionCategory", required = false) InstitutionCategoryEnum instCategory,
@@ -97,7 +87,7 @@ public class ProfileAccountController {
         return ResponseEntity.ok(userAccounts);
     }
 
-    @GetMapping(value = "/getUserAccount", produces = "application/json")
+    @GetMapping(value = "/getAccount", produces = "application/json")
     public ResponseEntity<AccountDocument> getProfileAccount(
             @RequestParam(name = "userName", required = true) String userName,
             @RequestParam(name = "accountId", required = true) String accountId) {
@@ -119,54 +109,14 @@ public class ProfileAccountController {
         return ResponseEntity.ok("Account is toggled!");
     }
 
-    @PostMapping("/uploadStatements")
-    public ResponseEntity<String> uploadAccountStatement(
-            @RequestParam(name = "userName", required = true) String userName,
-            @RequestParam(name = "accountId", required = true) String accountId,
-            @RequestParam(required = true, name = "file") MultipartFile file) throws IOException {
-
-        if ((file.isEmpty()) || (!accountService.isUserAccountExist(accountId, userName))) {
-            return ResponseEntity.badRequest().body("No Accout exist for this user.");
-        }
-        AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
-        MappingStrategy<AccountTransactionDocument> headerColumnNameMappingStrategy = new HeaderColumnNameMappingStrategyBuilder<AccountTransactionDocument>()
-                .withForceCorrectRecordLength(true).build();
-        headerColumnNameMappingStrategy.setProfile(accountDocument.getAccountType().getAccountTypeName());
-        headerColumnNameMappingStrategy.setType(AccountTransactionDocument.class);
-
-        InputStreamReader reader = new InputStreamReader(file.getInputStream());
-        CsvToBean<AccountTransactionDocument> csvToBean = new CsvToBeanBuilder<AccountTransactionDocument>(reader)
-                .withProfile(accountDocument.getAccountType().getAccountTypeName())
-                .withSeparator(',').withIgnoreLeadingWhiteSpace(true)
-                .withMappingStrategy(headerColumnNameMappingStrategy)
-                .build();
-        List<AccountTransactionDocument> transactionList = new ArrayList<>();
-        csvToBean.iterator().forEachRemaining(e -> {
-            transactionList.add(e);
-        });
-        transactionList.forEach(transDoc -> {
-            if (StringUtils.equalsIgnoreCase("Credit", transDoc.getType())) {
-                transDoc.setCredit(transDoc.getTransient_amount().abs());
-            } else {
-                transDoc.setDebit(transDoc.getTransient_amount().abs());
-            }
-            transDoc.setAccountDocumentId(accountDocument.getId());
-        });
-
-        accountService.processAccountTransactions(transactionList, accountDocument);
-
-        return ResponseEntity.ok("Account statement updated for account id : " + accountId);
-    }
-
     @GetMapping(value = "/accountStatements")
-    public ResponseEntity<List<AccountTransactionDocument>> getAccountTransactionStatements(
+    public ResponseEntity<List<BankAccountTransactionDocument>> getAccountTransactionStatements(
             @RequestParam(name = "userName", required = true) String userName,
             @RequestParam(name = "accountId", required = true) String accountId) {
         if (!accountService.isUserAccountExist(accountId, userName)) {
             throw new AppException("User Account do not exists.");
         }
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
-        accountService.calculateAccountTransactionBalance(accountDocument);
         return ResponseEntity.ok(accountService.getAccountTransactionDocuments(accountDocument));
     }
 

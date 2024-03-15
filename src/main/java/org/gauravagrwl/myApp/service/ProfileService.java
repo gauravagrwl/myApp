@@ -35,10 +35,18 @@ public class ProfileService {
         return byUserName.get(0);
     }
 
-    public String dropDatabase() {
-		template.getCollectionNames().stream().forEach(col -> template.dropCollection(col));
-		return "Warning All Database is dropped";
+    public List<ProfileDocument> getAllProfileDocument() {
+        List<ProfileDocument> allUserProfile = profileDocumentRepository.findAll();
+        if (allUserProfile.size() != 1) {
+            throw new AppException("No user found!");
+        }
+        return allUserProfile;
+    }
 
-	}
+    public String dropDatabase() {
+        template.getCollectionNames().stream().forEach(col -> template.dropCollection(col));
+        return "Warning All Database is dropped";
+
+    }
 
 }

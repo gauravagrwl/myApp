@@ -9,8 +9,8 @@ import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.AccountDocument;
-import org.gauravagrwl.myApp.model.AccountTransactionDocument;
+import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.AccountTransactionDocumentRepository;
 import org.slf4j.Logger;
@@ -38,8 +38,9 @@ public class AccountService {
     private MongoTemplate template;
 
     private ProfileService profileService;
+    private AccountAsyncService accountAsyncService;
 
-    private Query getDuplicateTransactionQuery(AccountTransactionDocument t) {
+    private Query getDuplicateTransactionQuery(BankAccountTransactionDocument t) {
         Query query = new Query(
                 Criteria.where("transactionDate").is(t.getTransactionDate()).and("descriptions")
                         .is(t.getDescriptions()).and("type").is(t.getType()).and("debit").is(t.getDebit())
@@ -56,10 +57,12 @@ public class AccountService {
     }
 
     public AccountService(AccountDocumentRepository accountDocumentRepository, ProfileService profileService,
-            AccountTransactionDocumentRepository accountTransactionDocumentRepository, MongoTemplate template) {
+            AccountTransactionDocumentRepository accountTransactionDocumentRepository, MongoTemplate template,
+            AccountAsyncService accountAsyncService) {
         this.accountDocumentRepository = accountDocumentRepository;
         this.profileService = profileService;
         this.template = template;
+        this.accountAsyncService = accountAsyncService;
     }
 
     public String addUserAccount(AccountDocument accountDocument, String userName) {
@@ -67,7 +70,7 @@ public class AccountService {
         String profileId = profileService.getProfileDocument(userName).getId();
         accountDocument.setProfileDocumentId(profileId);
         accountDocument.setStatementCollectionName(
-                AppHelper.getCollectionName(accountDocument.getAccountNumber(), "Account_Statement"));
+                AppHelper.getStatementCollectionName(accountDocument.getAccountNumber()));
         AccountDocument save = accountDocumentRepository.save(accountDocument);
 
         return save.getId();
@@ -104,7 +107,7 @@ public class AccountService {
     }
 
     @SuppressWarnings("null")
-    public void processAccountTransactions(List<AccountTransactionDocument> transactionList,
+    public void processAccountTransactions(List<BankAccountTransactionDocument> transactionList,
             @NonNull AccountDocument accountDocument) {
         String transactionCollectionName = accountDocument.getStatementCollectionName();
         transactionList.stream().forEach(
@@ -112,7 +115,7 @@ public class AccountService {
                     Query query = getDuplicateTransactionQuery(t);
                     Update update = Update.update("duplicate", Boolean.TRUE);
                     UpdateResult updateMultiResult = template.updateMulti(query, update,
-                            AccountTransactionDocument.class, transactionCollectionName);
+                            BankAccountTransactionDocument.class, transactionCollectionName);
                     if (updateMultiResult.getMatchedCount() > 0) {
                         LOGGER.warn("Total Duplicate Records found: " + updateMultiResult.getMatchedCount()
                                 + "and total updated records are: " + updateMultiResult.getModifiedCount());
@@ -120,55 +123,19 @@ public class AccountService {
                     }
                     template.save(t, transactionCollectionName);
                 });
-    }
-
-    public List<AccountTransactionDocument> getAccountTransactionDocuments(@NonNull AccountDocument accountDocument) {
-        List<AccountTransactionDocument> transactionList = new ArrayList<>();
-        String collectionName = accountDocument.getStatementCollectionName();
-        if (StringUtils.isNotBlank(collectionName)) {
-            transactionList.addAll(template.findAll(AccountTransactionDocument.class, collectionName));
-        }
-        transactionList.sort(AccountTransactionDocument.sortBankStatment);
-        return transactionList;
+        performAccountProcessing(accountDocument);
     }
 
     @Async
-    public void calculateAccountTransactionBalance(AccountDocument accountDocument) {
-        if (!accountDocument.getIsBalanceCalculated()) {
-            LOGGER.info("Processing Account Balance for account: "
-                    + AppHelper.prependAccountNumber(accountDocument.getAccountNumber()));
-            List<AccountTransactionDocument> accountTransactionDocumentList = getAccountTransactionDocuments(
-                    accountDocument);
-            accountTransactionDocumentList.sort(AccountTransactionDocument.sortBankStatment);
-            BigDecimal accountBalance = BigDecimal.ZERO;
-            Long seqNum = 0L;
-
-            for (AccountTransactionDocument transactionDocument : accountTransactionDocumentList) {
-                seqNum = getNextSequenceNumber(seqNum);
-                transactionDocument.setSno(seqNum);
-                accountBalance = accountBalance.add(transactionDocument.getCredit())
-                        .subtract(transactionDocument.getDebit());
-                transactionDocument.setBalance(accountBalance);
-                updateTransactionDocument(transactionDocument, accountDocument.getStatementCollectionName());
-
-                if (!AccountTypeEnum.CREDIT.equals(accountDocument.getAccountType())
-                        && InstitutionCategoryEnum.BANKING.equals(accountDocument.getInstitutionCategory())) {
-                    accountDocument.calculate(accountBalance);
-                    accountDocument.setIsBalanceCalculated(Boolean.TRUE);
-                    accountDocumentRepository.save(accountDocument);
-                }
-            }
+    public List<BankAccountTransactionDocument> getAccountTransactionDocuments(
+            @NonNull AccountDocument accountDocument) {
+        List<BankAccountTransactionDocument> transactionList = new ArrayList<>();
+        String collectionName = accountDocument.getStatementCollectionName();
+        if (StringUtils.isNotBlank(collectionName)) {
+            transactionList.addAll(template.findAll(BankAccountTransactionDocument.class, collectionName));
         }
-    }
-
-    private void updateTransactionDocument(AccountTransactionDocument transactionDocument,
-            @NonNull String accountTransactionCollectionName) {
-        Query query = new Query(Criteria.where("id").is(transactionDocument.getId()));
-        template.findAndReplace(query, transactionDocument, accountTransactionCollectionName);
-    }
-
-    private Long getNextSequenceNumber(Long initalValue) {
-        return initalValue + 1;
+        transactionList.sort(BankAccountTransactionDocument.sortBankStatment);
+        return transactionList;
     }
 
     @SuppressWarnings("null")
@@ -176,17 +143,17 @@ public class AccountService {
         String accountTransactionCollectionName = accountDocument.getStatementCollectionName();
 
         Query findById = findById(transactionId);
-        AccountTransactionDocument one = template.findOne(findById, AccountTransactionDocument.class,
+        BankAccountTransactionDocument one = template.findOne(findById, BankAccountTransactionDocument.class,
                 accountTransactionCollectionName);
-        DeleteResult remove = template.remove(findById(transactionId), AccountTransactionDocument.class,
+        DeleteResult remove = template.remove(findById(transactionId), BankAccountTransactionDocument.class,
                 accountTransactionCollectionName);
 
         Query findDuplicateQuery = getDuplicateTransactionQuery(one);
-        long count = template.count(findDuplicateQuery, AccountTransactionDocument.class,
+        long count = template.count(findDuplicateQuery, BankAccountTransactionDocument.class,
                 accountTransactionCollectionName);
         if (count == 1) {
             Update updateDefination = Update.update("duplicate", Boolean.FALSE);
-            template.findAndModify(findDuplicateQuery, updateDefination, AccountTransactionDocument.class,
+            template.findAndModify(findDuplicateQuery, updateDefination, BankAccountTransactionDocument.class,
                     accountTransactionCollectionName);
         }
 
@@ -194,8 +161,35 @@ public class AccountService {
                 + remove.getDeletedCount());
         accountDocument.setIsBalanceCalculated(Boolean.FALSE);
         accountDocumentRepository.save(accountDocument);
-        calculateAccountTransactionBalance(accountDocument);
+        performAccountProcessing(accountDocument);
         return (remove.wasAcknowledged());
+
+    }
+
+    public void performAccountProcessing() {
+        List<AccountDocument> profileAccountDocuments = new ArrayList<>();
+        profileService.getAllProfileDocument()
+                .forEach(profile -> profileAccountDocuments.addAll(getUserAccounts(profile.getUserName())));
+
+        profileAccountDocuments.forEach(accountDocument -> performAccountProcessing(accountDocument));
+
+    }
+
+    // TODO:
+    // Add filter for which all account balance can be calculated and be added
+    // Balance calculation: Bank Account expect credit (primary account)
+    // to cashflow statement for all cash in and cash out (primary account)
+    @Async
+    public void performAccountProcessing(AccountDocument accountDocument) {
+        List<BankAccountTransactionDocument> accountTransactionDocuments = getAccountTransactionDocuments(
+                accountDocument);
+        if ((InstitutionCategoryEnum.BANKING.compareTo(accountDocument.getInstitutionCategory()) == 0) &&
+                AccountTypeEnum.CREDIT.compareTo(accountDocument.getAccountType()) != 0) {
+            accountAsyncService.calculateAccountTransactionBalance(accountDocument, accountTransactionDocuments);
+        }
+        if (InstitutionCategoryEnum.BANKING.compareTo(accountDocument.getInstitutionCategory()) == 0) {
+            accountAsyncService.updateCashFlowDocuments(accountDocument, accountTransactionDocuments);
+        }
 
     }
 
