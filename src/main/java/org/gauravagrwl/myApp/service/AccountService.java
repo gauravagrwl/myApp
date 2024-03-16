@@ -11,6 +11,7 @@ import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.CashFlowTransactionDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.AccountTransactionDocumentRepository;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.mongodb.client.result.DeleteResult;
@@ -126,7 +128,6 @@ public class AccountService {
         performAccountProcessing(accountDocument);
     }
 
-    @Async
     public List<BankAccountTransactionDocument> getAccountTransactionDocuments(
             @NonNull AccountDocument accountDocument) {
         List<BankAccountTransactionDocument> transactionList = new ArrayList<>();
@@ -134,6 +135,7 @@ public class AccountService {
         if (StringUtils.isNotBlank(collectionName)) {
             transactionList.addAll(template.findAll(BankAccountTransactionDocument.class, collectionName));
         }
+        CashFlowTransactionDocument cashFlowTransactionId = transactionList.get(0).getCashFlowTransactionId();
         transactionList.sort(BankAccountTransactionDocument.sortBankStatment);
         return transactionList;
     }
@@ -166,6 +168,7 @@ public class AccountService {
 
     }
 
+    @Scheduled(cron = "${updateCashFlowStatement}")
     public void performAccountProcessing() {
         List<AccountDocument> profileAccountDocuments = new ArrayList<>();
         profileService.getAllProfileDocument()
@@ -179,8 +182,7 @@ public class AccountService {
     // Add filter for which all account balance can be calculated and be added
     // Balance calculation: Bank Account expect credit (primary account)
     // to cashflow statement for all cash in and cash out (primary account)
-    @Async
-    public void performAccountProcessing(AccountDocument accountDocument) {
+    private void performAccountProcessing(AccountDocument accountDocument) {
         List<BankAccountTransactionDocument> accountTransactionDocuments = getAccountTransactionDocuments(
                 accountDocument);
         if ((InstitutionCategoryEnum.BANKING.compareTo(accountDocument.getInstitutionCategory()) == 0) &&

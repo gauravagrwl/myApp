@@ -1,6 +1,8 @@
 package org.gauravagrwl.myApp.model;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
@@ -36,6 +38,8 @@ public class ProfileDocument {
     private List<? extends AccountDocument> userAccounts;
 
     private AuditMetadata audit = new AuditMetadata();
+
+    private Set<String> cashFlowDocumentCollectionSet = new HashSet<>();
 
     @Version
     private Integer version;

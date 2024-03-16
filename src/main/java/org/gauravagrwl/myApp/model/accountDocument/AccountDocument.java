@@ -48,7 +48,7 @@ public abstract class AccountDocument {
     private InstitutionCategoryEnum institutionCategory;
 
     // Financial institute Account Number must be unique
-    @Indexed(unique = true, background = true)
+    @Indexed(unique = true)
     private String accountNumber;
 
     private AccountTypeEnum accountType;

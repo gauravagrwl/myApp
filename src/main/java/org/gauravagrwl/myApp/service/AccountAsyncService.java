@@ -9,10 +9,12 @@ import java.util.stream.Collectors;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
+import org.gauravagrwl.myApp.model.ProfileDocument;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
 import org.gauravagrwl.myApp.model.accountTransaction.CashFlowTransactionDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
+import org.gauravagrwl.myApp.model.repositories.ProfileDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -30,9 +32,13 @@ public class AccountAsyncService {
 
     AccountDocumentRepository accountDocumentRepository;
 
-    public AccountAsyncService(MongoTemplate template, AccountDocumentRepository accountDocumentRepository) {
+    ProfileDocumentRepository profileDocumentRepository;
+
+    public AccountAsyncService(MongoTemplate template, AccountDocumentRepository accountDocumentRepository,
+            ProfileDocumentRepository profileDocumentRepository) {
         this.template = template;
         this.accountDocumentRepository = accountDocumentRepository;
+        this.profileDocumentRepository = profileDocumentRepository;
     }
 
     Logger LOGGER = LoggerFactory.getLogger(AccountAsyncService.class);
@@ -76,6 +82,7 @@ public class AccountAsyncService {
         return initalValue + 1;
     }
 
+    @SuppressWarnings("null")
     @Async
     public void updateCashFlowDocuments(AccountDocument accountDocument,
             List<BankAccountTransactionDocument> accountTransactionDocumentList) {
@@ -87,8 +94,25 @@ public class AccountAsyncService {
                 .collect(Collectors
                         .groupingBy(cashFlowTransaction -> cashFlowTransaction.getTransactionDate().getYear()));
 
-        cashFlowTransactionList.size();
+        ProfileDocument profileDocument = profileDocumentRepository.findById(accountDocument.getProfileDocumentId())
+                .get();
 
+        cashFlowTransactionList.keySet().forEach(key -> {
+            updateCashFlowStatement(key, cashFlowTransactionList.get(key), profileDocument);
+        });
+
+        cashFlowTransactionList.size();
+    }
+
+    private void updateCashFlowStatement(Integer year, List<CashFlowTransactionDocument> cashFlowTransactionList,
+            ProfileDocument profileDocument) {
+        String collectionName = profileDocument.getUserName() + "_" + "cashflow_statement_" + year;
+        profileDocument.getCashFlowDocumentCollectionSet().add(collectionName);
+        profileDocumentRepository.save(profileDocument);
+
+        cashFlowTransactionList.stream().forEach(s -> {
+            template.save(s, collectionName);
+        });
     }
 
     private CashFlowTransactionDocument buildCashFlowTransaction(BankAccountTransactionDocument accountTransaction) {
@@ -98,7 +122,7 @@ public class AccountAsyncService {
         cashFlowTransactionDocument.setDescription(accountTransaction.getDescriptions());
         cashFlowTransactionDocument.setCashIn(accountTransaction.getCredit());
         cashFlowTransactionDocument.setCashOut(accountTransaction.getDebit());
-        cashFlowTransactionDocument.setStatementDocumentId(accountTransaction.getId());
+        cashFlowTransactionDocument.setAccountTransactionId(accountTransaction.getId());
         if (cashFlowTransactionDocument.getCashIn().compareTo(BigDecimal.ZERO) > 0) {
             cashFlowTransactionDocument.setTransactionType("CashIn");
         } else {

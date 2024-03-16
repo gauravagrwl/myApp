@@ -24,3 +24,6 @@ spring:
     mongodb:
       uri: mongodb://localhost:27017
       database: testDatabase
+      auto-index-creation: true
+  autoconfigure:
+    exclude: 'org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration'

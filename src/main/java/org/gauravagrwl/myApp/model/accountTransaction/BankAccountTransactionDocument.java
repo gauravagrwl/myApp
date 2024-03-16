@@ -7,6 +7,7 @@ import java.util.Comparator;
 import org.gauravagrwl.myApp.helper.CsvAmountStringToBigDecimalConverter;
 import org.gauravagrwl.myApp.helper.CsvMDYDateStringToDateConverter;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
+import org.springframework.data.annotation.PersistenceCreator;
 import org.springframework.data.annotation.ReadOnlyProperty;
 import org.springframework.data.annotation.Transient;
 import org.springframework.data.annotation.Version;
@@ -22,14 +23,14 @@ import com.opencsv.bean.CsvCustomBindByNames;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @AllArgsConstructor
-@NoArgsConstructor
 @Getter
 @Setter
-@Document(collection = "transactions_document")
+@RequiredArgsConstructor(onConstructor = @__(@PersistenceCreator))
+@Document
 public class BankAccountTransactionDocument {
 	// Chase - chk / sav: Details Posting Date Description Amount Type Balance Check
 	// or Slip #
@@ -74,7 +75,7 @@ public class BankAccountTransactionDocument {
 	private String slip, referenceNo, notes;
 
 	@ReadOnlyProperty
-	@DocumentReference(lookup = "{'transactionDocumentId':?#{#self._id} }", lazy = true)
+	@DocumentReference(lookup = "{'accountTransactionId':?#{#id} }", lazy = true)
 	private CashFlowTransactionDocument cashFlowTransactionId;
 
 	public static Comparator<BankAccountTransactionDocument> sortBankStatment = Comparator
