@@ -7,7 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.service.AccountService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.bean.HeaderColumnNameMappingStrategyBuilder;
 import com.opencsv.bean.MappingStrategy;
 
 @RestController
@@ -42,19 +41,20 @@ public class DataUploadController {
         }
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
 
-        MappingStrategy<BankAccountTransactionDocument> headerColumnNameMappingStrategy = new HeaderColumnNameMappingStrategyBuilder<BankAccountTransactionDocument>()
-                .withForceCorrectRecordLength(true).build();
-        headerColumnNameMappingStrategy.setProfile(accountDocument.getAccountType().getAccountTypeName());
-        headerColumnNameMappingStrategy.setType(BankAccountTransactionDocument.class);
+        String profileType = accountDocument.getAccountType().getAccountTypeName();
+
+        MappingStrategy<BankAccountStatementDocument> headerColumnNameMappingStrategy = BankAccountStatementDocument
+                .getHeaderColumnNameMappingStrategy(
+                        profileType);
 
         InputStreamReader reader = new InputStreamReader(file.getInputStream());
-        CsvToBean<BankAccountTransactionDocument> csvToBean = new CsvToBeanBuilder<BankAccountTransactionDocument>(
+        CsvToBean<BankAccountStatementDocument> csvToBean = new CsvToBeanBuilder<BankAccountStatementDocument>(
                 reader)
                 .withProfile(accountDocument.getAccountType().getAccountTypeName())
                 .withSeparator(',').withIgnoreLeadingWhiteSpace(true)
                 .withMappingStrategy(headerColumnNameMappingStrategy)
                 .build();
-        List<BankAccountTransactionDocument> transactionList = new ArrayList<>();
+        List<BankAccountStatementDocument> transactionList = new ArrayList<>();
         csvToBean.iterator().forEachRemaining(e -> {
             transactionList.add(e);
         });
@@ -67,7 +67,7 @@ public class DataUploadController {
             transDoc.setAccountDocumentId(accountDocument.getId());
         });
 
-        accountService.processAccountTransactions(transactionList, accountDocument);
+        accountService.processAccountStatements((List) transactionList, accountDocument);
 
         return ResponseEntity.ok("Account statement updated for account id : " + accountId);
     }

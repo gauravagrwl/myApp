@@ -39,8 +39,6 @@ public class ProfileDocument {
 
     private AuditMetadata audit = new AuditMetadata();
 
-    private Set<String> cashFlowDocumentCollectionSet = new HashSet<>();
-
     @Version
     private Integer version;
 

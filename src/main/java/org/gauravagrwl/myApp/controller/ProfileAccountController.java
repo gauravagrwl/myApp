@@ -1,15 +1,18 @@
 package org.gauravagrwl.myApp.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
+import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,14 +113,22 @@ public class ProfileAccountController {
     }
 
     @GetMapping(value = "/accountStatements")
-    public ResponseEntity<List<BankAccountTransactionDocument>> getAccountTransactionStatements(
+    public ResponseEntity<? super AccountStatementDocument> getAccountTransactionStatements(
             @RequestParam(name = "userName", required = true) String userName,
             @RequestParam(name = "accountId", required = true) String accountId) {
         if (!accountService.isUserAccountExist(accountId, userName)) {
             throw new AppException("User Account do not exists.");
         }
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
-        return ResponseEntity.ok(accountService.getAccountTransactionDocuments(accountDocument));
+        List<? extends AccountStatementDocument> accountStatementDocumentList = accountService
+                .getAccountStatementDocuments(accountDocument);
+        if (InstitutionCategoryEnum.BANKING.equals(accountDocument.getInstitutionCategory())) {
+            @SuppressWarnings("unchecked")
+            List<BankAccountStatementDocument> bankAcountStatementList = (List<BankAccountStatementDocument>) accountStatementDocumentList;
+            bankAcountStatementList.sort(BankAccountStatementDocument.statementSort);
+            return ResponseEntity.ok(bankAcountStatementList);
+        }
+        return ResponseEntity.ok(accountStatementDocumentList);
     }
 
     @DeleteMapping(value = "/deleteTransaction")
@@ -126,7 +137,7 @@ public class ProfileAccountController {
             @RequestParam(name = "accountId", required = true) String accountId,
             @RequestParam(name = "transactionId", required = true) String transactionId) {
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
-        if (accountService.deleteAccountTransaction(accountDocument, transactionId)) {
+        if (accountService.deleteAccountStatementDocument(accountDocument, transactionId)) {
             return ResponseEntity.ok("Document is removed.");
         }
         return ResponseEntity.ok("Document is not removed.");

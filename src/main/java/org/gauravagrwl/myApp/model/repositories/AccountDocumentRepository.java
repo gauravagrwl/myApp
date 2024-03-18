@@ -4,10 +4,12 @@ import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 
+import javax.management.Query;
+
 public interface AccountDocumentRepository extends MongoRepository<AccountDocument, String> {
 
-    List<AccountDocument> findByProfileDocumentId(String profileDocumentId);
+    public List<AccountDocument> findByProfileDocumentId(String profileDocumentId);
 
-    boolean existsByIdAndProfileDocumentId(String id, String profileDocumentId);
+    public Boolean existsByIdAndProfileDocumentId(String id, String profileDocumentId);
 
 }

@@ -56,10 +56,6 @@ public abstract class AccountDocument {
     // User profile who holds the account
     private String profileDocumentId;
 
-    // Document name which hold statement and ledger data of the account.
-    // Transaction records done with primary accounts.
-    private String statementCollectionName;
-
     // Is this account still Active.
     private Boolean isActive = Boolean.TRUE;
 

@@ -1,10 +1,10 @@
-package org.gauravagrwl.myApp.model.accountTransaction;
+package org.gauravagrwl.myApp.model.reports;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
-import org.springframework.data.annotation.PersistenceCreator;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.DocumentReference;
@@ -12,20 +12,22 @@ import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 @Document(collection = "cashflow_document")
-@RequiredArgsConstructor(onConstructor = @__(@PersistenceCreator))
 public class CashFlowTransactionDocument {
 
     @MongoId
     private String id;
 
     private LocalDate transactionDate; // Date Of Transactions
+
+    private int year;
 
     private String description;
 
@@ -39,7 +41,8 @@ public class CashFlowTransactionDocument {
 
     private Boolean duplicate;
 
-    private String accountTransactionId; // Which Account Transactions
+    // @DocumentReference(lazy = true)
+    private String accountStatementId; // Which Account Transactions
 
     private AuditMetadata audit = new AuditMetadata();
 

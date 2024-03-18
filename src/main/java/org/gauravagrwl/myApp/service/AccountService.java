@@ -1,31 +1,33 @@
 package org.gauravagrwl.myApp.service;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.StringUtils;
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountTransactionDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.CashFlowTransactionDocument;
+import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
+import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
+import org.gauravagrwl.myApp.model.reports.CashFlowTransactionDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
-import org.gauravagrwl.myApp.model.repositories.AccountTransactionDocumentRepository;
+import org.gauravagrwl.myApp.model.repositories.AccountStatementDocumentRepository;
+import org.gauravagrwl.myApp.model.repositories.CashFlowTransactionDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.UpdateResult;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
@@ -37,42 +39,30 @@ public class AccountService {
 
     private AccountDocumentRepository accountDocumentRepository;
 
-    private MongoTemplate template;
+    private AccountStatementDocumentRepository accountStatementDocumentRepository;
 
     private ProfileService profileService;
     private AccountAsyncService accountAsyncService;
 
-    private Query getDuplicateTransactionQuery(BankAccountTransactionDocument t) {
-        Query query = new Query(
-                Criteria.where("transactionDate").is(t.getTransactionDate()).and("descriptions")
-                        .is(t.getDescriptions()).and("type").is(t.getType()).and("debit").is(t.getDebit())
-                        .and("credit")
-                        .is(t.getCredit()));
-        return query;
-    }
-
-    private Query findById(@NonNull String id) {
-        Query query = new Query(
-                Criteria.where("id").is(id));
-        return query;
-
-    }
+    @Autowired
+    CashFlowTransactionDocumentRepository cashFlowTransactionDocumentRepository;
 
     public AccountService(AccountDocumentRepository accountDocumentRepository, ProfileService profileService,
-            AccountTransactionDocumentRepository accountTransactionDocumentRepository, MongoTemplate template,
-            AccountAsyncService accountAsyncService) {
+            AccountStatementDocumentRepository accountTransactionDocumentRepository,
+            AccountAsyncService accountAsyncService,
+            AccountStatementDocumentRepository accountStatementDocumentRepository) {
         this.accountDocumentRepository = accountDocumentRepository;
         this.profileService = profileService;
-        this.template = template;
         this.accountAsyncService = accountAsyncService;
+        this.accountStatementDocumentRepository = accountStatementDocumentRepository;
     }
 
     public String addUserAccount(AccountDocument accountDocument, String userName) {
 
         String profileId = profileService.getProfileDocument(userName).getId();
         accountDocument.setProfileDocumentId(profileId);
-        accountDocument.setStatementCollectionName(
-                AppHelper.getStatementCollectionName(accountDocument.getAccountNumber()));
+        // accountDocument.setStatementCollectionName(
+        // AppHelper.getStatementCollectionName(accountDocument.getAccountNumber()));
         AccountDocument save = accountDocumentRepository.save(accountDocument);
 
         return save.getId();
@@ -81,7 +71,8 @@ public class AccountService {
 
     public List<AccountDocument> getUserAccounts(String userName) {
         String profileId = profileService.getProfileDocument(userName).getId();
-        return accountDocumentRepository.findByProfileDocumentId(profileId);
+        List<AccountDocument> byProfileDocumentId = accountDocumentRepository.findByProfileDocumentId(profileId);
+        return byProfileDocumentId;
     }
 
     public void toggleAccountActiveStatus(String userName, @NotNull String accountId) {
@@ -109,66 +100,68 @@ public class AccountService {
     }
 
     @SuppressWarnings("null")
-    public void processAccountTransactions(List<BankAccountTransactionDocument> transactionList,
+    public void processAccountStatements(List<? extends AccountStatementDocument> accountStatementList,
             @NonNull AccountDocument accountDocument) {
-        String transactionCollectionName = accountDocument.getStatementCollectionName();
-        transactionList.stream().forEach(
-                t -> {
-                    Query query = getDuplicateTransactionQuery(t);
-                    Update update = Update.update("duplicate", Boolean.TRUE);
-                    UpdateResult updateMultiResult = template.updateMulti(query, update,
-                            BankAccountTransactionDocument.class, transactionCollectionName);
-                    if (updateMultiResult.getMatchedCount() > 0) {
-                        LOGGER.warn("Total Duplicate Records found: " + updateMultiResult.getMatchedCount()
-                                + "and total updated records are: " + updateMultiResult.getModifiedCount());
-                        t.setDuplicate(Boolean.TRUE);
-                    }
-                    template.save(t, transactionCollectionName);
-                });
+        accountStatementList.forEach(statement -> {
+            List<AccountStatementDocument> duplicateStatementList = findAllByStatementDocument(statement);
+            if (duplicateStatementList.size() > 0) {
+                duplicateStatementList.forEach(
+                        s -> accountStatementDocumentRepository.findAndUpdateDuplicateById(s.getId(), Boolean.TRUE));
+                statement.setDuplicate(Boolean.TRUE);
+            }
+            accountStatementDocumentRepository.insert(statement);
+        });
         performAccountProcessing(accountDocument);
     }
 
-    public List<BankAccountTransactionDocument> getAccountTransactionDocuments(
-            @NonNull AccountDocument accountDocument) {
-        List<BankAccountTransactionDocument> transactionList = new ArrayList<>();
-        String collectionName = accountDocument.getStatementCollectionName();
-        if (StringUtils.isNotBlank(collectionName)) {
-            transactionList.addAll(template.findAll(BankAccountTransactionDocument.class, collectionName));
-        }
-        CashFlowTransactionDocument cashFlowTransactionId = transactionList.get(0).getCashFlowTransactionId();
-        transactionList.sort(BankAccountTransactionDocument.sortBankStatment);
-        return transactionList;
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public List<AccountStatementDocument> findAllByStatementDocument(
+            @NonNull AccountStatementDocument statementDocument) {
+        ExampleMatcher matcher = ExampleMatcher.matching().withIgnorePaths("id", "reconciled",
+                "duplicate", "audit", "balance", "version");
+        Example<AccountStatementDocument> example = Example.of(statementDocument, matcher);
+        return (List) accountStatementDocumentRepository.findAll(example);
     }
 
-    @SuppressWarnings("null")
-    public Boolean deleteAccountTransaction(AccountDocument accountDocument, @NonNull String transactionId) {
-        String accountTransactionCollectionName = accountDocument.getStatementCollectionName();
+    public List<? extends AccountStatementDocument> getAccountStatementDocuments(
+            @NonNull AccountDocument accountDocument) {
+        List<AccountStatementDocument> accountStatementList = accountStatementDocumentRepository
+                .findByAccountDocumentId(accountDocument.getId());
 
-        Query findById = findById(transactionId);
-        BankAccountTransactionDocument one = template.findOne(findById, BankAccountTransactionDocument.class,
-                accountTransactionCollectionName);
-        DeleteResult remove = template.remove(findById(transactionId), BankAccountTransactionDocument.class,
-                accountTransactionCollectionName);
+        return accountStatementList;
 
-        Query findDuplicateQuery = getDuplicateTransactionQuery(one);
-        long count = template.count(findDuplicateQuery, BankAccountTransactionDocument.class,
-                accountTransactionCollectionName);
-        if (count == 1) {
-            Update updateDefination = Update.update("duplicate", Boolean.FALSE);
-            template.findAndModify(findDuplicateQuery, updateDefination, BankAccountTransactionDocument.class,
-                    accountTransactionCollectionName);
+    }
+
+    public Boolean deleteAccountStatementDocument(AccountDocument accountDocument, @NonNull String accountStatementId) {
+        AccountStatementDocument statement = accountStatementDocumentRepository.findById(accountStatementId).get();
+
+        if (accountStatementDocumentRepository.existsById(accountStatementId)) {
+            deleteCashFlowDocument(accountStatementId);
+            accountStatementDocumentRepository.deleteById(accountStatementId);
+            LOGGER.info("Account Statment deleted for id: " + accountStatementId
+                    + !accountStatementDocumentRepository.existsById(accountStatementId));
         }
-
-        LOGGER.info("Account Transaction deleted for id: " + transactionId + "and Total delete count is: "
-                + remove.getDeletedCount());
+        List<AccountStatementDocument> duplicateStatementList = findAllByStatementDocument(statement);
+        if (duplicateStatementList.size() == 1) {
+            accountStatementDocumentRepository.findAndUpdateDuplicateById(duplicateStatementList.get(0).getId(),
+                    Boolean.FALSE);
+        }
         accountDocument.setIsBalanceCalculated(Boolean.FALSE);
         accountDocumentRepository.save(accountDocument);
         performAccountProcessing(accountDocument);
-        return (remove.wasAcknowledged());
-
+        return true;
     }
 
-    @Scheduled(cron = "${updateCashFlowStatement}")
+    private boolean deleteCashFlowDocument(@NonNull String accountStatementId) {
+        if (cashFlowTransactionDocumentRepository.existsByAccountStatementId(accountStatementId)) {
+            LOGGER.info("CashFlow Transaction deleted for id: " + accountStatementId + "and Total delete count is: "
+                    + cashFlowTransactionDocumentRepository.deleteByAccountStatementId(accountStatementId));
+            return true;
+        }
+        return false;
+    }
+
+    // @Scheduled(cron = "${updateCashFlowStatement}")
     public void performAccountProcessing() {
         List<AccountDocument> profileAccountDocuments = new ArrayList<>();
         profileService.getAllProfileDocument()
@@ -182,17 +175,18 @@ public class AccountService {
     // Add filter for which all account balance can be calculated and be added
     // Balance calculation: Bank Account expect credit (primary account)
     // to cashflow statement for all cash in and cash out (primary account)
+    @SuppressWarnings("unchecked")
     private void performAccountProcessing(AccountDocument accountDocument) {
-        List<BankAccountTransactionDocument> accountTransactionDocuments = getAccountTransactionDocuments(
-                accountDocument);
-        if ((InstitutionCategoryEnum.BANKING.compareTo(accountDocument.getInstitutionCategory()) == 0) &&
-                AccountTypeEnum.CREDIT.compareTo(accountDocument.getAccountType()) != 0) {
-            accountAsyncService.calculateAccountTransactionBalance(accountDocument, accountTransactionDocuments);
-        }
         if (InstitutionCategoryEnum.BANKING.compareTo(accountDocument.getInstitutionCategory()) == 0) {
-            accountAsyncService.updateCashFlowDocuments(accountDocument, accountTransactionDocuments);
+            List<BankAccountStatementDocument> bankAccountStatementList = (List<BankAccountStatementDocument>) getAccountStatementDocuments(
+                    accountDocument);
+            if (AccountTypeEnum.CREDIT.compareTo(accountDocument.getAccountType()) != 0) {
+                accountAsyncService.calculateAccountStatementBalance(accountDocument,
+                        bankAccountStatementList);
+            }
+
+            accountAsyncService.updateCashFlowDocuments(accountDocument,
+                    bankAccountStatementList);
         }
-
     }
-
 }
