@@ -2,16 +2,12 @@ package org.gauravagrwl.myApp.service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
-import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
 import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
-import org.gauravagrwl.myApp.model.reports.CashFlowTransactionDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.AccountStatementDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.CashFlowTransactionDocumentRepository;
@@ -20,14 +16,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
-
-import com.mongodb.client.result.DeleteResult;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
@@ -115,7 +108,7 @@ public class AccountService {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public List<AccountStatementDocument> findAllByStatementDocument(
+    private List<AccountStatementDocument> findAllByStatementDocument(
             @NonNull AccountStatementDocument statementDocument) {
         ExampleMatcher matcher = ExampleMatcher.matching().withIgnorePaths("id", "reconciled",
                 "duplicate", "audit", "balance", "version");
@@ -124,9 +117,22 @@ public class AccountService {
     }
 
     public List<? extends AccountStatementDocument> getAccountStatementDocuments(
-            @NonNull AccountDocument accountDocument) {
+            @NonNull AccountDocument accountDocument, Integer pageNumber, Integer pageSize) {
+
+        Sort sort = Sort.by(Direction.ASC, "transactionDate").and(Sort.by(Direction.ASC, "type"));
+        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize, sort);
         List<AccountStatementDocument> accountStatementList = accountStatementDocumentRepository
-                .findByAccountDocumentId(accountDocument.getId());
+                .findByAccountDocumentId(accountDocument.getId(), pageRequest);
+
+        return accountStatementList;
+
+    }
+
+    private List<? extends AccountStatementDocument> getAccountStatementDocuments(
+            @NonNull AccountDocument accountDocument) {
+        Sort sort = Sort.by(Direction.ASC, "transactionDate").and(Sort.by(Direction.ASC, "type"));
+        List<AccountStatementDocument> accountStatementList = accountStatementDocumentRepository
+                .findByAccountDocumentId(accountDocument.getId(), sort);
 
         return accountStatementList;
 

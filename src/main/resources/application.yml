@@ -4,7 +4,7 @@
 logging:
   level:
     root: INFO
-    org.mongodb.driver.protocol.command: DEBUG
+    # org.mongodb.driver.protocol.command: DEBUG
 
 
 

@@ -43,6 +43,7 @@ public class ProfileService {
         return allUserProfile;
     }
 
+    @SuppressWarnings("null")
     public String dropDatabase() {
         template.getCollectionNames().stream().forEach(col -> template.dropCollection(col));
         return "Warning All Database is dropped";

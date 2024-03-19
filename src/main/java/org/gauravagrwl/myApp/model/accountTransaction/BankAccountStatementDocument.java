@@ -67,10 +67,6 @@ public class BankAccountStatementDocument extends AccountStatementDocument {
 		return headerColumnNameMappingStrategy;
 	}
 
-	public static Comparator<BankAccountStatementDocument> statementSort = Comparator
-			.comparing(BankAccountStatementDocument::getTransactionDate)
-			.thenComparing(BankAccountStatementDocument::getType);
-
 }
 // SAV - debit goes in to the account
 // SAV - Credit goes out of the account

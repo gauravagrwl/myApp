@@ -1,10 +1,8 @@
 package org.gauravagrwl.myApp.controller;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
@@ -12,10 +10,10 @@ import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -115,19 +113,25 @@ public class ProfileAccountController {
     @GetMapping(value = "/accountStatements")
     public ResponseEntity<? super AccountStatementDocument> getAccountTransactionStatements(
             @RequestParam(name = "userName", required = true) String userName,
-            @RequestParam(name = "accountId", required = true) String accountId) {
+            @RequestParam(name = "accountId", required = true) String accountId,
+            @RequestParam(name = "pageNumber", required = false, defaultValue = "0") Integer pageNumber,
+            @RequestParam(name = "pageSize", required = false, defaultValue = "20") Integer pageSize) {
         if (!accountService.isUserAccountExist(accountId, userName)) {
             throw new AppException("User Account do not exists.");
         }
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
         List<? extends AccountStatementDocument> accountStatementDocumentList = accountService
-                .getAccountStatementDocuments(accountDocument);
-        if (InstitutionCategoryEnum.BANKING.equals(accountDocument.getInstitutionCategory())) {
-            @SuppressWarnings("unchecked")
-            List<BankAccountStatementDocument> bankAcountStatementList = (List<BankAccountStatementDocument>) accountStatementDocumentList;
-            bankAcountStatementList.sort(BankAccountStatementDocument.statementSort);
-            return ResponseEntity.ok(bankAcountStatementList);
-        }
+                .getAccountStatementDocuments(accountDocument, pageNumber, pageSize);
+        ;
+        // if
+        // (InstitutionCategoryEnum.BANKING.equals(accountDocument.getInstitutionCategory()))
+        // {
+        // @SuppressWarnings("unchecked")
+        // List<BankAccountStatementDocument> bankAcountStatementList =
+        // (List<BankAccountStatementDocument>) accountStatementDocumentList;
+        // bankAcountStatementList.sort(BankAccountStatementDocument.statementSort);
+        // return ResponseEntity.ok(bankAcountStatementList);
+        // }
         return ResponseEntity.ok(accountStatementDocumentList);
     }
 

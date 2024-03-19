@@ -5,13 +5,17 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 
 public interface AccountStatementDocumentRepository extends MongoRepository<AccountStatementDocument, String> {
 
-    List<AccountStatementDocument> findByAccountDocumentId(String accountDocumentId);
+    List<AccountStatementDocument> findByAccountDocumentId(String accountDocumentId, Pageable pageable);
+
+    List<AccountStatementDocument> findByAccountDocumentId(String accountDocumentId, Sort sort);
 
     @Update("{ '$set' : { 'reconciled' : ?#{[1]} } }")
     void findAndUpdateReconcileById(String id, Boolean value);

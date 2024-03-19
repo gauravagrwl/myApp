@@ -3,11 +3,9 @@ package org.gauravagrwl.myApp.model.reports;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DocumentReference;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
 import lombok.AllArgsConstructor;

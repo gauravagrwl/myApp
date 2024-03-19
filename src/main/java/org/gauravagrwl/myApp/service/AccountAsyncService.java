@@ -6,7 +6,6 @@ import java.util.List;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.ProfileDocument;
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.model.reports.CashFlowTransactionDocument;
@@ -18,12 +17,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-
-import lombok.NonNull;
 
 @Service
 public class AccountAsyncService {
@@ -57,7 +52,7 @@ public class AccountAsyncService {
             LOGGER.info("Processing Account Balance for account: "
                     + AppHelper.prependAccountNumber(accountDocument.getAccountNumber()));
 
-            accountStatementDocumentList.sort(BankAccountStatementDocument.statementSort);
+            // accountStatementDocumentList.sort(BankAccountStatementDocument.statementSort);
             BigDecimal accountBalance = BigDecimal.ZERO;
 
             for (BankAccountStatementDocument statementDocument : accountStatementDocumentList) {
@@ -77,16 +72,6 @@ public class AccountAsyncService {
         }
     }
 
-    private void updateTransactionDocument(BankAccountStatementDocument transactionDocument,
-            @NonNull String accountTransactionCollectionName) {
-        Query query = new Query(Criteria.where("id").is(transactionDocument.getId()));
-        template.findAndReplace(query, transactionDocument, accountTransactionCollectionName);
-    }
-
-    private Long getNextSequenceNumber(Long initalValue) {
-        return initalValue + 1;
-    }
-
     @Async
     public void updateCashFlowDocuments(AccountDocument accountDocument,
             List<BankAccountStatementDocument> bankAccountStatementList) {
@@ -96,33 +81,6 @@ public class AccountAsyncService {
             }
         });
 
-        // Map<Integer, List<CashFlowTransactionDocument>> cashFlowTransactionList =
-        // cashFlowTransactions.stream()
-        // .collect(Collectors
-        // .groupingBy(cashFlowTransaction ->
-        // cashFlowTransaction.getTransactionDate().getYear()));
-
-        // ProfileDocument profileDocument =
-        // profileDocumentRepository.findById(accountDocument.getProfileDocumentId())
-        // .get();
-
-        // cashFlowTransactionList.keySet().forEach(key -> {
-        // updateCashFlowStatement(key, cashFlowTransactionList.get(key),
-        // profileDocument);
-        // });
-
-        // cashFlowTransactionList.size();
-    }
-
-    private void updateCashFlowStatement(Integer year, List<CashFlowTransactionDocument> cashFlowTransactionList,
-            ProfileDocument profileDocument) {
-        String collectionName = profileDocument.getUserName() + "_" + "cashflow_statement_" + year;
-        // profileDocument.getCashFlowDocumentCollectionSet().add(collectionName);
-        profileDocumentRepository.save(profileDocument);
-
-        cashFlowTransactionList.stream().forEach(s -> {
-            template.save(s, collectionName);
-        });
     }
 
     private void buildCashFlowTransaction(BankAccountStatementDocument accountStatement) {

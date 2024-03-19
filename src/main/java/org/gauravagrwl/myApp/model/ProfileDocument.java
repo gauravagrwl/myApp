@@ -1,9 +1,6 @@
 package org.gauravagrwl.myApp.model;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
 import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
 import org.springframework.data.annotation.ReadOnlyProperty;
