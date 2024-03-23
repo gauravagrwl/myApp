@@ -18,3 +18,4 @@ services:
 networks:
   dbnetwork:
     name: dbnetwork
+    external: true

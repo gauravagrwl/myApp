@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model.accountDocument;
+package org.gauravagrwl.myApp.model.profileAccount.accountDocument;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -48,7 +48,7 @@ public abstract class AccountDocument {
     private InstitutionCategoryEnum institutionCategory;
 
     // Financial institute Account Number must be unique
-    @Indexed(unique = true)
+    @Indexed(unique = true, background = true)
     private String accountNumber;
 
     private AccountTypeEnum accountType;

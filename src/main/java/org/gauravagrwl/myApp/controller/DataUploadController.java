@@ -6,9 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.service.AccountService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,7 +26,9 @@ import com.opencsv.bean.MappingStrategy;
 @RequestMapping(value = "/upload")
 public class DataUploadController {
 
-    private AccountService accountService;
+    Logger LOGGER = LoggerFactory.getLogger(DataUploadController.class);
+
+    private final AccountService accountService;
 
     public DataUploadController(AccountService accountService) {
         this.accountService = accountService;
@@ -37,7 +41,7 @@ public class DataUploadController {
             @RequestParam(required = true, name = "file") MultipartFile file) throws IOException {
 
         if ((file.isEmpty()) || (!accountService.isUserAccountExist(accountId, userName))) {
-            return ResponseEntity.badRequest().body("No Accout exist for this user.");
+            return ResponseEntity.badRequest().body("No Account exist for this user.");
         }
         AccountDocument accountDocument = accountService.getAccountDocument(accountId, userName);
 
@@ -55,9 +59,7 @@ public class DataUploadController {
                 .withMappingStrategy(headerColumnNameMappingStrategy)
                 .build();
         List<BankAccountStatementDocument> transactionList = new ArrayList<>();
-        csvToBean.iterator().forEachRemaining(e -> {
-            transactionList.add(e);
-        });
+        csvToBean.iterator().forEachRemaining(transactionList::add);
         transactionList.forEach(transDoc -> {
             if (StringUtils.equalsIgnoreCase("Credit", transDoc.getType())) {
                 transDoc.setCredit(transDoc.getTransient_amount().abs());
@@ -67,13 +69,9 @@ public class DataUploadController {
             transDoc.setAccountDocumentId(accountDocument.getId());
         });
 
-        accountService.processAccountStatements((List) transactionList, accountDocument);
+        accountService.processAccountStatements(transactionList, accountDocument);
 
         return ResponseEntity.ok("Account statement updated for account id : " + accountId);
-    }
-
-    public AccountService getAccountService() {
-        return accountService;
     }
 
 }

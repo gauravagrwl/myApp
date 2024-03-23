@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model.accountLedger;
+package org.gauravagrwl.myApp.model.profileAccount.accountLedger;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model.accountDocument;
+package org.gauravagrwl.myApp.model.profileAccount.accountDocument;
 
 import java.math.BigDecimal;
 
@@ -7,10 +7,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
 public class AssetsAccountDocument extends AccountDocument {
 
     // Total amount for the purchase.

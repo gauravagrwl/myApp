@@ -5,19 +5,18 @@ import java.util.List;
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.AccountStatementDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.BankAccountStatementDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.AccountStatementDocumentRepository;
-import org.gauravagrwl.myApp.model.repositories.CashFlowTransactionDocumentRepository;
+import org.gauravagrwl.myApp.model.repositories.CashFlowReportDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.stereotype.Service;
@@ -38,7 +37,7 @@ public class AccountService {
     private AccountAsyncService accountAsyncService;
 
     @Autowired
-    CashFlowTransactionDocumentRepository cashFlowTransactionDocumentRepository;
+    CashFlowReportDocumentRepository cashFlowTransactionDocumentRepository;
 
     public AccountService(AccountDocumentRepository accountDocumentRepository, ProfileService profileService,
             AccountStatementDocumentRepository accountTransactionDocumentRepository,
@@ -64,7 +63,8 @@ public class AccountService {
 
     public List<AccountDocument> getUserAccounts(String userName) {
         String profileId = profileService.getProfileDocument(userName).getId();
-        List<AccountDocument> byProfileDocumentId = accountDocumentRepository.findByProfileDocumentId(profileId);
+        Sort sort = Sort.by(Direction.DESC, "institutionCurrency");
+        List<AccountDocument> byProfileDocumentId = accountDocumentRepository.findByProfileDocumentId(profileId, sort);
         return byProfileDocumentId;
     }
 
@@ -97,7 +97,7 @@ public class AccountService {
             @NonNull AccountDocument accountDocument) {
         accountStatementList.forEach(statement -> {
             List<AccountStatementDocument> duplicateStatementList = findAllByStatementDocument(statement);
-            if (duplicateStatementList.size() > 0) {
+            if (!duplicateStatementList.isEmpty()) {
                 duplicateStatementList.forEach(
                         s -> accountStatementDocumentRepository.findAndUpdateDuplicateById(s.getId(), Boolean.TRUE));
                 statement.setDuplicate(Boolean.TRUE);

@@ -1,9 +1,11 @@
 package org.gauravagrwl.myApp.model.assets;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
-public class CryptoAsset {
+public class CryptoAsset extends Asset{
 
     private String crypto_coin_name;
     private String crypto_coin_symbol;

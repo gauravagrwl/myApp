@@ -18,8 +18,8 @@ public enum AccountTypeEnum {
 	LOAN(InstitutionCategoryEnum.LOAN, "LOAN", "401"),
 	;
 
-	private InstitutionCategoryEnum accountCategory;
-	private String accountTypeName, accountTypeCode;
+	private final InstitutionCategoryEnum accountCategory;
+	private final String accountTypeName, accountTypeCode;
 
 	/**
 	 * 

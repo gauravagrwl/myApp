@@ -18,7 +18,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 @Document(collection = "cashflow_document")
-public class CashFlowTransactionDocument {
+public class CashFlowReportDocument {
 
     @MongoId
     private String id;

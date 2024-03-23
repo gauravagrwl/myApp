@@ -6,12 +6,12 @@ import java.util.List;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountTransaction.BankAccountStatementDocument;
-import org.gauravagrwl.myApp.model.reports.CashFlowTransactionDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.BankAccountStatementDocument;
+import org.gauravagrwl.myApp.model.reports.CashFlowReportDocument;
 import org.gauravagrwl.myApp.model.repositories.AccountDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.AccountStatementDocumentRepository;
-import org.gauravagrwl.myApp.model.repositories.CashFlowTransactionDocumentRepository;
+import org.gauravagrwl.myApp.model.repositories.CashFlowReportDocumentRepository;
 import org.gauravagrwl.myApp.model.repositories.ProfileDocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,12 +29,12 @@ public class AccountAsyncService {
     AccountDocumentRepository accountDocumentRepository;
 
     ProfileDocumentRepository profileDocumentRepository;
-    CashFlowTransactionDocumentRepository cashFlowTransactionDocumentRepository;
+    CashFlowReportDocumentRepository cashFlowTransactionDocumentRepository;
     AccountStatementDocumentRepository accountStatementDocumentRepository;
 
     public AccountAsyncService(MongoTemplate template, AccountDocumentRepository accountDocumentRepository,
             ProfileDocumentRepository profileDocumentRepository,
-            CashFlowTransactionDocumentRepository cashFlowTransactionDocumentRepository,
+            CashFlowReportDocumentRepository cashFlowTransactionDocumentRepository,
             AccountStatementDocumentRepository accountStatementDocumentRepository) {
         this.template = template;
         this.accountDocumentRepository = accountDocumentRepository;
@@ -84,7 +84,7 @@ public class AccountAsyncService {
     }
 
     private void buildCashFlowTransaction(BankAccountStatementDocument accountStatement) {
-        CashFlowTransactionDocument cashFlowTransactionDocument = new CashFlowTransactionDocument();
+        CashFlowReportDocument cashFlowTransactionDocument = new CashFlowReportDocument();
 
         cashFlowTransactionDocument.setTransactionDate(accountStatement.getTransactionDate());
         cashFlowTransactionDocument.setYear(accountStatement.getTransactionDate().getYear());

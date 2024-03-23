@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model;
+package org.gauravagrwl.myApp.model.profileAccount.accountDocument;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
-public class InvestmentAccountApi {
+public class InvestmentAccountApiDocument {
 
     private String userId;
     private String userSecrect;

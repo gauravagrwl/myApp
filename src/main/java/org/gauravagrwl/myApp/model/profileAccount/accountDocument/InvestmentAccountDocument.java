@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model.accountDocument;
+package org.gauravagrwl.myApp.model.profileAccount.accountDocument;
 
 import java.math.BigDecimal;
 

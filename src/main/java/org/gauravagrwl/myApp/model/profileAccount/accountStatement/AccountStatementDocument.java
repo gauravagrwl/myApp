@@ -1,4 +1,4 @@
-package org.gauravagrwl.myApp.model.accountStatement;
+package org.gauravagrwl.myApp.model.profileAccount.accountStatement;
 
 import org.gauravagrwl.myApp.model.audit.AuditMetadata;
 import org.springframework.data.annotation.Version;

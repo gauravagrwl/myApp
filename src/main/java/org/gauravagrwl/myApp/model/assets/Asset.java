@@ -1,5 +1,6 @@
 package org.gauravagrwl.myApp.model.assets;
 
+import org.gauravagrwl.myApp.helper.ExchangeEnum;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
@@ -17,5 +18,7 @@ public abstract class Asset {
 
     @MongoId
     private String id;
+
+    private ExchangeEnum exchangeEnum;
 
 }

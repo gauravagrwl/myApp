@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.AccountStatementDocument;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;

@@ -2,7 +2,7 @@ package org.gauravagrwl.myApp.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.gauravagrwl.myApp.model.ProfileDocument;
+import org.gauravagrwl.myApp.model.profile.ProfileDocument;
 import org.gauravagrwl.myApp.service.ProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

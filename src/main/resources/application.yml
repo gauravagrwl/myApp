@@ -7,23 +7,7 @@ logging:
     # org.mongodb.driver.protocol.command: DEBUG
 
 
-
-server:
-  port: 8084
-#  servlet:
-#    context-path: /api/portfoio
-
-
-
-    
-updateBalance: "10 * * * * *"
-updateCashFlowStatement: "10 * * * * *"
-
 spring:
   data:
     mongodb:
-      uri: mongodb://localhost:27017
-      database: testDatabase
       auto-index-creation: true
-  autoconfigure:
-    exclude: 'org.springframework.boot.autoconfigure.data.mongo.MongoReactiveDataAutoConfiguration'

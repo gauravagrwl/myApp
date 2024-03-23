@@ -1,12 +1,10 @@
-package org.gauravagrwl.myApp.model.accountTransaction;
+package org.gauravagrwl.myApp.model.profileAccount.accountStatement;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Comparator;
 
 import org.gauravagrwl.myApp.helper.CsvAmountStringToBigDecimalConverter;
 import org.gauravagrwl.myApp.helper.CsvMDYDateStringToDateConverter;
-import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
 import org.springframework.data.annotation.Transient;
 
 import com.opencsv.bean.CsvBindByName;

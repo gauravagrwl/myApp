@@ -1,28 +1,21 @@
 package org.gauravagrwl.myApp.controller;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.gauravagrwl.myApp.exception.AppException;
 import org.gauravagrwl.myApp.helper.AccountTypeEnum;
 import org.gauravagrwl.myApp.helper.AppHelper;
 import org.gauravagrwl.myApp.helper.InstitutionCategoryEnum;
-import org.gauravagrwl.myApp.model.accountDocument.AccountDocument;
-import org.gauravagrwl.myApp.model.accountStatement.AccountStatementDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountDocument.AccountDocument;
+import org.gauravagrwl.myApp.model.profileAccount.accountStatement.AccountStatementDocument;
 import org.gauravagrwl.myApp.service.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping(value = "/profileAccount")
@@ -37,10 +30,10 @@ public class ProfileAccountController {
     }
 
     /**
-     * 
-     * @param userName
-     * @param accountDocument
-     * @return
+     *
+     * @param userName - Username
+     * @param accountDocument - account details
+     * @return - Success if added
      */
     @PostMapping(value = "/addAccount", consumes = "application/json", produces = "application/json")
     public ResponseEntity<String> addAccount(@RequestParam(required = false) String userName,
@@ -50,10 +43,10 @@ public class ProfileAccountController {
     }
 
     /**
-     * 
-     * @param userName
-     * @param accountDocuments
-     * @return
+     *
+     * @param userName - Username
+     * @param accountDocuments - list of account details
+     * @return - Success if added
      */
     @PostMapping(value = "/addAccounts", consumes = "application/json", produces = "application/json")
     public ResponseEntity<Map<String, String>> addAccounts(@RequestParam(required = false) String userName,
@@ -146,6 +139,27 @@ public class ProfileAccountController {
         }
         return ResponseEntity.ok("Document is not removed.");
 
+    }
+
+    @GetMapping(value = "/getAccountsType")
+    ResponseEntity<List<String>> getAccountType(
+            @RequestParam(name = "userName", required = true) String userName,
+            @RequestParam(name = "accountCategory", required = false) String accountCategory) {
+
+        List<String> accountTypeList = new ArrayList<>();
+        for (AccountTypeEnum accountType : AccountTypeEnum.values()) {
+            accountTypeList.add(accountType.name().toUpperCase());
+        }
+        return ResponseEntity.ok(accountTypeList);
+    }
+
+    @GetMapping(value = "/getInstitutionCategory")
+    ResponseEntity<List<String>> getAccountCategory() {
+        List<String> accountCatList = new ArrayList<>();
+        for (InstitutionCategoryEnum accountCat : InstitutionCategoryEnum.values()) {
+            accountCatList.add(accountCat.getCategoryName().toUpperCase());
+        }
+        return ResponseEntity.ok(accountCatList);
     }
 
 }

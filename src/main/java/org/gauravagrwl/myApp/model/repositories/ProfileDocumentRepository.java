@@ -1,6 +1,6 @@
 package org.gauravagrwl.myApp.model.repositories;
 
-import org.gauravagrwl.myApp.model.ProfileDocument;
+import org.gauravagrwl.myApp.model.profile.ProfileDocument;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import java.util.List;
 

@@ -3,7 +3,7 @@ package org.gauravagrwl.myApp.service;
 import java.util.List;
 
 import org.gauravagrwl.myApp.exception.AppException;
-import org.gauravagrwl.myApp.model.ProfileDocument;
+import org.gauravagrwl.myApp.model.profile.ProfileDocument;
 import org.gauravagrwl.myApp.model.repositories.ProfileDocumentRepository;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
